@@ -52,15 +52,16 @@
             const track = document.getElementById('vacancies-track');
             if(!rssInput) { track.innerHTML = '<div class="loading">Enter RSS URL to display jobs.</div>'; return; }
 
-            const proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rssInput);
+            const proxyUrl = 'https://api.rssapi.net/v1/rss?url=${encodeURIComponent(rssInput)}&limit=25';
             try {
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
                 
-                if (data && data.items && data.items.length > 0) {
+                if (data && data.articles && data.articles.length > 0) {
                     // Sorting logic: Closest deadline first
-                    const sortedItems = data.items.map(item => {
-                        const dDoc = new DOMParser().parseFromString(item.description, "text/html");
+                    const sortedItems = data.articles.map(item => {
+                        const htmlContent = item.description || item.content || '';
+                        const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
                         let dateVal = 8640000000000000; // Far future fallback
                         const labels = dDoc.querySelectorAll('.feed-entry-label');
                         
@@ -93,7 +94,8 @@
         function renderVacancies(items, track) {
             track.innerHTML = ''; 
             items.forEach(item => {
-                const dDoc = new DOMParser().parseFromString(item.description, "text/html");
+                const htmlContent = item.description || item.content || '';
+                const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
                 let employer = "Employer", oppType = "Opportunity", deadline = "Ongoing", details = "";
 
                 const labels = dDoc.querySelectorAll('.feed-entry-label');
