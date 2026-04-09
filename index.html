@@ -64,7 +64,12 @@
                 return;
             }
 
-            const proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(rssInput);
+/* Change the number of vacancies displayed here */
+            
+            const proxyUrl = 
+                'https://api.rss2json.com/v1/api.json?rss_url=' + 
+                encodeURIComponent(rssInput) + 
+                '&count=30';
 
             try {
                 const response = await fetch(proxyUrl);
