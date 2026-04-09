@@ -32,93 +32,77 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 
 <script>
 async function fetchVacancies() {
-    const rssInput = 'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
     const track = document.getElementById('vacancies-track');
 
-    if (!rssInput) {
-        track.innerHTML = '<div class="loading">Enter RSS URL to display jobs.</div>';
-        return;
-    }
-
-    const proxyUrl = `https://github.com/BSUCE-DS/MyCareer_PTJobs/blob/main/fetchRSS.js?url=${encodeURIComponent(rssInput)}`;
-
     try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`Proxy returned status ${response.status}`);
+        const response = await fetch('vacancies.json'); // your JSON file in repo
+        if (!response.ok) throw new Error("Failed to load vacancies.json");
 
-        const data = await response.json();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(data.contents, "text/xml");
-
-        const items = Array.from(xml.querySelectorAll("item")).map(item => ({
-            title: item.querySelector("title")?.textContent || "No title",
-            link: item.querySelector("link")?.textContent || "#",
-            description: item.querySelector("description")?.textContent || ""
-        }));
-
-        if (items.length > 0) {
-            renderVacancies(items, track);
-        } else {
+        const items = await response.json();
+        if (items.length === 0) {
             track.innerHTML = '<div class="loading">No current vacancies found.</div>';
+            return;
         }
-    } catch (error) {
-        console.error(error);
-        track.innerHTML = '<div class="loading" style="color: #ef4444;">Error loading vacancies. Proxy or feed may be unavailable.</div>';
-    }
-}
 
-function renderVacancies(items, track) {
-    track.innerHTML = '';
-    items.forEach(item => {
-        const htmlContent = item.description || '';
-        const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
+        track.innerHTML = ''; // clear loading
 
-        let employer = "Employer", oppType = "Opportunity", deadline = "Ongoing", details = "";
+        items.forEach(item => {
+            // Parse description for structured fields (optional: adapt your generator to include these)
+            const htmlContent = item.description || '';
+            const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
 
-        const labels = dDoc.querySelectorAll('.feed-entry-label');
-        labels.forEach(label => {
-            const txt = label.textContent.toLowerCase();
-            const valNode = label.parentElement.querySelector('.feed-entry-value');
-            if (txt.includes('employer name')) employer = valNode ? valNode.textContent.trim() : "Employer";
-            if (txt.includes('type of opportunity')) oppType = valNode ? valNode.textContent.trim() : "Opportunity";
-            if (txt.includes('closing date')) {
-                deadline = valNode ? valNode.textContent.trim() : "Ongoing";
-                if(deadline.includes(' at ')) deadline = deadline.split(' at ')[0];
-            }
-            if (txt.includes('details')) {
-                details = valNode ? valNode.textContent.trim() : label.parentElement.textContent.replace(label.textContent, '').trim();
-                details = details.replace(/^:\s*/, '').trim();
-            }
+            let employer = "Employer";
+            let oppType = "Opportunity";
+            let deadline = "Ongoing";
+            let details = htmlContent;
+
+            // Look for labeled fields if you added them in JSON
+            const labels = dDoc.querySelectorAll('.feed-entry-label');
+            labels.forEach(label => {
+                const txt = label.textContent.toLowerCase();
+                const valNode = label.parentElement.querySelector('.feed-entry-value');
+                if (txt.includes('employer name')) employer = valNode ? valNode.textContent.trim() : employer;
+                if (txt.includes('type of opportunity')) oppType = valNode ? valNode.textContent.trim() : oppType;
+                if (txt.includes('closing date')) {
+                    deadline = valNode ? valNode.textContent.trim() : deadline;
+                    if(deadline.includes(' at ')) deadline = deadline.split(' at ')[0];
+                }
+                if (txt.includes('details')) {
+                    details = valNode ? valNode.textContent.trim() : details;
+                }
+            });
+
+            if (!details) details = "Click to view full job description and application details.";
+
+            const initial = employer.charAt(0).toUpperCase();
+            const card = document.createElement('a');
+            card.href = item.link || "#";
+            card.target = "_blank";
+            card.className = 'vacancy-card';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="employer-icon">${initial}</div>
+                    <div class="header-text">
+                        <div class="employer-name">${employer}</div>
+                        <h3 class="vacancy-title">${item.title}</h3>
+                    </div>
+                </div>
+                <div class="pill-container">
+                    <span class="pill pill-type">💼 ${oppType}</span>
+                    <span class="pill pill-deadline">⏳ Closes ${deadline}</span>
+                </div>
+                <p class="vacancy-desc">${details}</p>
+            `;
+            track.appendChild(card);
         });
 
-        if (details.startsWith(':')) details = details.substring(1).trim();
-        if (!details) details = "Click to view full job description and application details.";
-
-        const initial = employer.charAt(0).toUpperCase();
-        const card = document.createElement('a');
-        card.href = item.link;
-        card.target = "_blank";
-        card.className = 'vacancy-card';
-
-        card.innerHTML = `
-            <div class="card-header">
-                <div class="employer-icon">${initial}</div>
-                <div class="header-text">
-                    <div class="employer-name">${employer}</div>
-                    <h3 class="vacancy-title">${item.title}</h3>
-                </div>
-            </div>
-            <div class="pill-container">
-                <span class="pill pill-type">💼 ${oppType}</span>
-                <span class="pill pill-deadline">⏳ Closes ${deadline}</span>
-            </div>
-            <p class="vacancy-desc">${details}</p>
-        `;
-        track.appendChild(card);
-    });
+    } catch (error) {
+        console.error(error);
+        track.innerHTML = '<div class="loading" style="color: #ef4444;">Error loading vacancies.</div>';
+    }
 }
 
-// Fetch and display vacancies
 fetchVacancies();
 </script>
 </body>
