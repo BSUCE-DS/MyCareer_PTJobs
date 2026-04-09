@@ -52,7 +52,7 @@
             const track = document.getElementById('vacancies-track');
             if(!rssInput) { track.innerHTML = '<div class="loading">Enter RSS URL to display jobs.</div>'; return; }
 
-            const proxyUrl = 'https://api.rssapi.net/v1/rss?url=${encodeURIComponent(rssInput)}&limit=25';
+            const proxyUrl = 'https://api.rssapi.net/v1/rss?url=' + encodeURIComponent(rssInput);+ '&limit=25';
             try {
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
