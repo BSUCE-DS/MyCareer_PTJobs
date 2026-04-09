@@ -64,37 +64,44 @@
                 return;
             }
 
-/* Change the number of vacancies displayed here */
-            
-            const proxyUrl = 
-                'https://api.rss2json.com/v1/api.json?rss_url=' + 
-                encodeURIComponent(rssInput) + 
-                '&count=30';
+            const proxyUrl =
+             'https://api.allorigins.win/raw?url=' +
+             encodeURIComponent(rssInput);
 
             try {
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                if (data && data.items && data.items.length > 0) {
-                    renderVacancies(data.items, track);
+            const response = await fetch(proxyUrl);
+            const rssText = await response.text();
+
+            const xml = new DOMParser().parseFromString(rssText, 'text/xml');
+            const items = Array.from(xml.querySelectorAll('item'));
+
+            if (items.length > 0) {
+              renderVacancies(items, track);
                 } else {
-                    track.innerHTML = '<div class="loading">No current vacancies found.</div>';
+              track.innerHTML = '<div class="loading">No current vacancies found.</div>';
                 }
-            } catch (error) {
-                console.error("Error fetching RSS:", error);
-                track.innerHTML = '<div class="loading" style="color: #ef4444;">Unable to load vacancies. Check feed URL.</div>';
             }
-        }
 
         function renderVacancies(items, track) {
             track.innerHTML = ''; 
-
+            
             items.forEach(item => {
-                const dDoc = new DOMParser().parseFromString(item.description, "text/html");
-                
                 let employer = "Employer";
                 let oppType = "Opportunity";
                 let deadline = "Open";
                 let details = "";
+                
+                const description =
+                    item.querySelector('description')?.textContent || '';
+
+                const dDoc =
+                    new DOMParser().parseFromString(description, 'text/html');
+                
+                const link =
+                    item.querySelector('link')?.textContent || '#';
+                
+                const title =
+                    item.querySelector('title')?.textContent || 'Vacancy';
 
                 // TargetConnect Specific HTML Parsing
                 const labels = dDoc.querySelectorAll('.feed-entry-label');
@@ -129,7 +136,7 @@
                 if (!details) details = "Click to view full job description and application details.";
 
                 const card = document.createElement('a');
-                card.href = item.link;
+                card.href = link;
                 card.target = "_blank";
                 card.className = 'vacancy-card';
 
@@ -140,7 +147,7 @@
                         <div class="employer-icon">${initial}</div>
                         <div class="header-text">
                             <div class="employer-name">${employer}</div>
-                            <h3 class="vacancy-title">${item.title}</h3>
+                            <h3 class="vacancy-title">${title}</h3>
                         </div>
                     </div>
                     <div class="pill-container">
