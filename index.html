@@ -55,33 +55,42 @@
     </div>
 
     <script>
-        async function fetchVacancies() {
-            const rssInput = 'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
-            const track = document.getElementById('vacancies-track');
-            
-            if(!rssInput) {
-                track.innerHTML = '<div class="loading">Enter your Vacancies RSS URL to display jobs.</div>';
-                return;
-            }
+async function fetchVacancies() {
+  const rssInput =
+    'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
+  const track = document.getElementById('vacancies-track');
 
-            const proxyUrl =
-             'https://api.allorigins.win/raw?url=' +
-             encodeURIComponent(rssInput);
+  if (!rssInput) {
+    track.innerHTML =
+      '<div class="loading">Enter your Vacancies RSS URL to display jobs.</div>';
+    return;
+  }
 
-            try {
-            const response = await fetch(proxyUrl);
-            const rssText = await response.text();
+  const proxyUrl =
+    'https://api.allorigins.win/raw?url=' +
+    encodeURIComponent(rssInput);
 
-            const xml = new DOMParser().parseFromString(rssText, 'text/xml');
-            const items = Array.from(xml.querySelectorAll('item'));
+  try {
+    const response = await fetch(proxyUrl);
+    const rssText = await response.text();
 
-            if (items.length > 0) {
-              renderVacancies(items, track);
-                } else {
-              track.innerHTML = '<div class="loading">No current vacancies found.</div>';
-                }
-            }
+    const xml =
+      new DOMParser().parseFromString(rssText, 'text/xml');
+    const items =
+      Array.from(xml.querySelectorAll('item'));
 
+    if (items.length > 0) {
+      renderVacancies(items, track);
+    } else {
+      track.innerHTML =
+        '<div class="loading">No current vacancies found.</div>';
+    }
+  } catch (error) {
+    console.error('Error loading RSS feed:', error);
+    track.innerHTML =
+      '<div class="loading">Unable to load vacancies.</div>';
+  }
+}
         function renderVacancies(items, track) {
             track.innerHTML = ''; 
             
