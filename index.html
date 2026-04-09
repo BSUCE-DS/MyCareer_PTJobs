@@ -19,7 +19,7 @@
     .pill { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
     .pill-type { background: #e0e7ff; color: #3730a3; }
     .pill-deadline { background: #fee2e2; color: #991b1b; }
-    .vacancy-desc { color: #475569; font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .vacancy-desc { color: #475569; font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; cursor: help; }
     .loading { text-align: center; color: #64748b; font-size: 1rem; width: 100%; padding: 40px; font-style: italic; }
 </style>
 </head>
@@ -47,20 +47,38 @@ async function fetchVacancies() {
 
         track.innerHTML = '';
         items.forEach(item => {
-            // Extract details if available in RSS content
             const htmlContent = item.description || '';
             const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
-            let employer = item.author || "Employer";
+
+            let employer = "Employer";
             let oppType = "Opportunity";
             let deadline = "Ongoing";
-            let details = htmlContent.replace(/<\/?[^>]+(>|$)/g, '').trim(); // Strip HTML tags for description
+            let details = "";
+
+            const labels = dDoc.querySelectorAll('.feed-entry-label');
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                const valNode = label.parentElement.querySelector('.feed-entry-value');
+                if(text.includes('employer name') && valNode) employer = valNode.textContent.trim();
+                if(text.includes('type of opportunity') && valNode) oppType = valNode.textContent.trim();
+                if(text.includes('closing date') && valNode) {
+                    deadline = valNode.textContent.trim();
+                    if(deadline.includes(' at ')) deadline = deadline.split(' at ')[0];
+                }
+                if(text.includes('details') && valNode) details = valNode.textContent.trim();
+            });
+
+            // Fallback if no "details" field
+            if (!details) details = htmlContent.replace(/<\/?[^>]+(>|$)/g, '').trim();
+            const truncated = details.length > 150 ? details.slice(0, 147) + '...' : details;
 
             const initial = employer.charAt(0).toUpperCase();
             const card = document.createElement('a');
-            card.href = item.link; 
-            card.target = "_blank"; 
+            card.href = item.link;
+            card.target = "_blank";
             card.className = 'vacancy-card';
-            
+
+            // Tooltip now shows only the "Details" field
             card.innerHTML = `
                 <div class="card-header">
                     <div class="employer-icon">${initial}</div>
@@ -73,7 +91,7 @@ async function fetchVacancies() {
                     <span class="pill pill-type">💼 ${oppType}</span>
                     <span class="pill pill-deadline">⏳ Closes ${deadline}</span>
                 </div>
-                <p class="vacancy-desc">${details}</p>
+                <p class="vacancy-desc" title="${details.replace(/"/g, '&quot;')}">${truncated}</p>
             `;
             track.appendChild(card);
         });
