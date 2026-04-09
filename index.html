@@ -47,49 +47,39 @@
         </div>
     </div>
     <script>
-        async function fetchVacancies() {
-            const rssInput = 'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
-            const track = document.getElementById('vacancies-track');
-            if(!rssInput) { track.innerHTML = '<div class="loading">Enter RSS URL to display jobs.</div>'; return; }
+        
+async function fetchVacancies() {
+    const rssInput = 'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
+    const track = document.getElementById('vacancies-track');
+    if (!rssInput) {
+        track.innerHTML = '<div class="loading">Enter RSS URL to display jobs.</div>';
+        return;
+    }
 
-            const proxyUrl = `https://api.rssapi.net/v1/rss?url=${encodeURIComponent(rssInput)}&limit=25`;
-            try {
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                
-                if (data && data.articles && data.articles.length > 0) {
-                    // Sorting logic: Closest deadline first
-                    const sortedItems = data.articles.map(item => {
-                        const htmlContent = item.description || item.content || '';
-                        const dDoc = new DOMParser().parseFromString(htmlContent, "text/html");
-                        let dateVal = 8640000000000000; // Far future fallback
-                        const labels = dDoc.querySelectorAll('.feed-entry-label');
-                        
-                        labels.forEach(l => {
-                            if (l.textContent.toLowerCase().includes('closing date')) {
-                                const v = l.parentElement.querySelector('.feed-entry-value');
-                                if (v) {
-                                    // Clean formatting like "29-Jan-2027 at 23:59"
-                                    const clean = v.textContent.trim().replace(' at ', ' ');
-                                    const d = new Date(clean);
-                                    if(!isNaN(d.getTime())) {
-                                        dateVal = d.getTime();
-                                    }
-                                }
-                            }
-                        });
-                        return { item, dateVal };
-                    }).sort((a, b) => a.dateVal - b.dateVal).map(obj => obj.item);
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssInput)}`;
+    try {
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
 
-                    renderVacancies(sortedItems, track);
-                } else { 
-                    track.innerHTML = '<div class="loading">No current vacancies found.</div>'; 
-                }
-            } catch (error) { 
-                console.error(error);
-                track.innerHTML = '<div class="loading" style="color: #ef4444;">Error loading vacancies.</div>'; 
-            }
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data.contents, "text/xml");
+
+        const items = Array.from(xml.querySelectorAll("item")).map(item => ({
+            title: item.querySelector("title")?.textContent || "",
+            link: item.querySelector("link")?.textContent || "",
+            description: item.querySelector("description")?.textContent || ""
+        }));
+
+        if (items.length > 0) {
+            renderVacancies(items, track);
+        } else {
+            track.innerHTML = '<div class="loading">No current vacancies found.</div>';
         }
+    } catch (error) {
+        console.error(error);
+        track.innerHTML = '<div class="loading" style="color: #ef4444;">Error loading vacancies.</div>';
+    }
+}
 
         function renderVacancies(items, track) {
             track.innerHTML = ''; 
