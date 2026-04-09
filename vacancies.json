@@ -1,0 +1,18 @@
+import requests
+import xml.etree.ElementTree as ET
+import json
+
+rss_url = "https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a"
+response = requests.get(rss_url)
+xml_root = ET.fromstring(response.content)
+
+items = []
+for item in xml_root.findall(".//item"):
+    items.append({
+        "title": item.findtext("title", default="No title"),
+        "link": item.findtext("link", default="#"),
+        "description": item.findtext("description", default="")
+    })
+
+with open("vacancies.json", "w", encoding="utf-8") as f:
+    json.dump(items, f, ensure_ascii=False, indent=2)
