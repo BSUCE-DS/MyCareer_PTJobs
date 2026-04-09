@@ -1,175 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vacancies RSS Widget</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: transparent; margin: 0; padding: 20px 10px; }
-        
-        .vacancies-container { max-width: 1200px; margin: 0 auto; }
-        
-        /* Layout Specifics */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vacancies RSS Widget</title>
 
-        .vacancies-track { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-                
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: transparent;
+      margin: 0;
+      padding: 20px 10px;
+    }
 
-        /* Vacancy Card Design */
-        .vacancy-card {
-            background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;
-            border-left: 6px solid #1368a5; padding: 20px; text-decoration: none;
-            display: flex; flex-direction: column; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .vacancy-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); border-color: #cbd5e1; }
+    .vacancies-container { max-width: 1200px; margin: 0 auto; }
 
-        .card-header { display: flex; gap: 15px; align-items: flex-start; }
-        
-        .employer-icon { 
-            width: 45px; height: 45px; flex-shrink: 0; border-radius: 8px; 
-            background: #1368a5; color: #ffffff; display: flex; align-items: center; 
-            justify-content: center; font-size: 1.4rem; font-weight: 800; text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .header-text { display: flex; flex-direction: column; gap: 4px; }
-        .employer-name { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .vacancy-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; line-height: 1.3; }
+    .vacancies-track {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
 
-        .pill-container { display: flex; flex-wrap: wrap; gap: 10px; }
-        .pill { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .pill-type { background: #e0e7ff; color: #3730a3; }
-        .pill-deadline { background: #fee2e2; color: #991b1b; }
+    .vacancy-card {
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      border-left: 6px solid #1368a5;
+      padding: 20px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
 
-        .vacancy-desc { color: #475569; font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        
-        .loading { text-align: center; color: #64748b; font-size: 1rem; width: 100%; padding: 40px; font-style: italic; }
-    </style>
+    .loading {
+      text-align: center;
+      color: #64748b;
+      padding: 40px;
+      font-style: italic;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="vacancies-container feed-wrapper">
-        <div class="vacancies-track" id="vacancies-track">
-            <div class="loading">Loading vacancies...</div>
-        </div>
+  <div class="vacancies-container">
+    <div class="vacancies-track" id="vacancies-track">
+      <div class="loading">Loading vacancies…</div>
     </div>
+  </div>
 
-    <script>
-async function fetchVacancies() {
-  const rssInput =
-    'https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a';
-  const track = document.getElementById('vacancies-track');
+  <script>
+    async function fetchVacancies() {
+      const rssInput =
+        "https://mycareer.bathspa.ac.uk/content/rss/MyCareerPTJobs/e7ff9b8c15769a944e719b4033dea757bf1a4a8a";
 
-  if (!rssInput) {
-    track.innerHTML =
-      '<div class="loading">Enter your Vacancies RSS URL to display jobs.</div>';
-    return;
-  }
+      const track = document.getElementById("vacancies-track");
 
-  const proxyUrl =
-    'https://api.allorigins.win/raw?url=' +
-    encodeURIComponent(rssInput);
+      const proxyUrl =
+        "https://api.allorigins.win/raw?url=" +
+        encodeURIComponent(rssInput);
 
-  try {
-    const response = await fetch(proxyUrl);
-    const rssText = await response.text();
+      try {
+        const response = await fetch(proxyUrl);
+        const rssText = await response.text();
 
-    const xml =
-      new DOMParser().parseFromString(rssText, 'text/xml');
-    const items =
-      Array.from(xml.querySelectorAll('item'));
+        const xml = new DOMParser().parseFromString(rssText, "text/xml");
+        const items = Array.from(xml.querySelectorAll("item"));
 
-    if (items.length > 0) {
-      renderVacancies(items, track);
-    } else {
-      track.innerHTML =
-        '<div class="loading">No current vacancies found.</div>';
+        track.innerHTML = "";
+        items.forEach(item => {
+          const title = item.querySelector("title")?.textContent ?? "Vacancy";
+          const link  = item.querySelector("link")?.textContent ?? "#";
+
+          const card = document.createElement("a");
+          card.className = "vacancy-card";
+          card.href = link;
+          card.target = "_blank";
+          card.textContent = title;
+
+          track.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        track.innerHTML =
+          '<div class="loading">Failed to load vacancies</div>';
+      }
     }
-  } catch (error) {
-    console.error('Error loading RSS feed:', error);
-    track.innerHTML =
-      '<div class="loading">Unable to load vacancies.</div>';
-  }
-}
-        function renderVacancies(items, track) {
-            track.innerHTML = ''; 
-            
-            items.forEach(item => {
-                let employer = "Employer";
-                let oppType = "Opportunity";
-                let deadline = "Open";
-                let details = "";
-                
-                const description =
-                    item.querySelector('description')?.textContent || '';
 
-                const dDoc =
-                    new DOMParser().parseFromString(description, 'text/html');
-                
-                const link =
-                    item.querySelector('link')?.textContent || '#';
-                
-                const title =
-                    item.querySelector('title')?.textContent || 'Vacancy';
+    fetchVacancies();
+  </script>
 
-                // TargetConnect Specific HTML Parsing
-                const labels = dDoc.querySelectorAll('.feed-entry-label');
-                labels.forEach(label => {
-                    const txt = label.textContent.toLowerCase();
-                    const parent = label.parentElement;
-                    const valNode = parent.querySelector('.feed-entry-value');
-
-                    if (txt.includes('employer name')) {
-                        employer = valNode ? valNode.textContent.trim() : "Unknown Employer";
-                    }
-                    if (txt.includes('type of opportunity')) {
-                        oppType = valNode ? valNode.textContent.trim() : "Opportunity";
-                    }
-                    if (txt.includes('closing date')) {
-                        deadline = valNode ? valNode.textContent.trim() : "Ongoing";
-                        // Simplify time output if it includes it
-                        if(deadline.includes(' at ')) deadline = deadline.split(' at ')[0];
-                    }
-                    if (txt.includes('details')) {
-                        if (valNode) {
-                            details = valNode.textContent.trim();
-                        } else {
-                            label.remove(); 
-                            details = parent.textContent.trim();
-                        }
-                        details = details.replace(/^:\s*/, '').trim();
-                    }
-                });
-
-                if (details.startsWith(':')) details = details.substring(1).trim();
-                if (!details) details = "Click to view full job description and application details.";
-
-                const card = document.createElement('a');
-                card.href = link;
-                card.target = "_blank";
-                card.className = 'vacancy-card';
-
-                const initial = employer.charAt(0).toUpperCase();
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="employer-icon">${initial}</div>
-                        <div class="header-text">
-                            <div class="employer-name">${employer}</div>
-                            <h3 class="vacancy-title">${title}</h3>
-                        </div>
-                    </div>
-                    <div class="pill-container">
-                        <span class="pill pill-type">💼 ${oppType}</span>
-                        <span class="pill pill-deadline">⏳ Closes ${deadline}</span>
-                    </div>
-                    <p class="vacancy-desc">${details}</p>
-                `;
-
-                track.appendChild(card);
-            });
-        }
-        fetchVacancies();
-    </script>
 </body>
 </html>
